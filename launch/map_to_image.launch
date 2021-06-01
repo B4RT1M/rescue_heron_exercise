@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+	<node name="map_to_image" pkg="hector_compressed_map_transport" type="map_to_image_node" />
+
+	<node pkg="heron_exploration" name="pose_republisher" type="pose_republisher.py" />
+	
+</launch>

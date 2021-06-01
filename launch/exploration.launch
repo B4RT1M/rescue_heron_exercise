@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Start simulating a Heron -->
+  <include file="$(find heron_rescue)/launch/heron_river.launch"/>
+  <!-- <include file="$(find heron_exploration)/launch/laser_filter.launch"/> -->
+  <include file="$(find heron_exploration)/launch/gmapping.launch"/>
+  <!--node pkg="gmapping" type="slam_gmapping" name="gmapping_thing" output="screen" >
+    <remap from="scan" to="front/scan" />
+  </node-->
+  <include file="$(find heron_exploration)/launch/move_base.launch"/>
+
+  <include file="$(find heron_exploration)/launch/map_to_image.launch"/>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find heron_exploration)/rviz/heron.rviz"/>
+</launch>
