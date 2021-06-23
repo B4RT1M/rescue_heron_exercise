@@ -36,20 +36,44 @@ def get_data():
 def frontier_exploration():
 
 	data, odom, resolution = get_data()
-
+	rate = rospy.Rate(10)
+	
 	#visualize data
 	plt.imshow(data)
+	plt.title('Original Image')
 	plt.show()
 
 	#find all frontier points, can be defined as edge detection problem, cv2.Canny can be used
-
-
+	edges = cv2.Canny(data, 11, 11, L2gradient = False)	
+	plt.imshow(edges)
+	plt.title('Edged Image')
+	plt.show()
 	#calculate information gain, tip: set everything to zero expect unexplored area
 	#you can use cv2.filter2D with your own kernel
-
+	info_gain = np.zeros((64,64), dtype=np.float64)
+	indices = np.where(data == 2)
+	info_gain[indices] = 2
+	
+	# define the kernel K
+	K = np.ones((9,9),np.float64)/25
+	#you can use cv2.filter2D with your own kernel
+	conv_info_gain = cv2.filter2D(info_gain,-1,K)
+	
+	plt.imshow(conv_info_gain)
+	plt.title('Convoluted on unexplored area')
+	plt.show()
 
 	#find the frontier point with the biggest information gain, this will be our goal point
+	max_info_indices = np.where(conv_info_gain == np.max(conv_info_gain))	
+	listOfCoordinates = list(zip(max_info_indices[1],max_info_indices[0]))
+	
+	# We will use the last found point as goal point
+	max_info_gain = cv2.circle(edges, listOfCoordinates[len(listOfCoordinates)-1], radius = 0, color=(139,0,0), thickness=-1)
 
+	plt.imshow(max_info_gain)
+	plt.title('Goal point coordinates: ' + str(listOfCoordinates[len(listOfCoordinates) - 1]))	
+	plt.show()
+	
 
 	#define a PoseStamped message here and publish it on the move_base_publisher
 	goal=PoseStamped()
@@ -57,9 +81,21 @@ def frontier_exploration():
 	goal.header.frame_id="odom"
 	goal.pose.orientation.w=1
 	#define x and y position of the pose here
+	goal_y = listOfCoordinates[len(listOfCoordinates)-1][0]
+	goal_x = listOfCoordinates[len(listOfCoordinates)-1][1]
 	#use the odom position and the goal point
+	goal_y = goal_y - odom.pose.pose.position.x
+	goal_x = goal_x - odom.pose.pose.position.y
 	#reminder: the "odom position of the boat" is the center of the image!
 	#the goal point must still be converted, you will need the resolution of the map for this which is given with the parameter "resolution"
+	goal_y = goal_y * resolution
+	goal_x = goal_x * resolution
+
+	goal.pose.position.x = odom.pose.pose.position.x + goal_y
+	goal.pose.position.y = -(odom.pose.pose.position.y + goal_x)
+
+	move_base_publisher.publish(goal)
+	rate.sleep()
 
 if __name__ == '__main__':
 	try:
